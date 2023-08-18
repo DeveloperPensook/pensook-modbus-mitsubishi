@@ -12,34 +12,53 @@
     <label for="port">Port:</label>
     <input type="number" id="modbusPort" name="modbusPort" value="502" required> Default ModBus Port<br><br> 
 
-	<label for="unit">Slave ID:</label>
+	  <label for="unit">Slave ID:</label>
     <input type="number" id="slaveId" name="slaveId" required><br><br>
 
-    <label for="unit">Address:</label>
-    <input type="number" id="address" name="address" required><br><br>
+    <h2>CRUD Table</h2>
+    <table id="registers">
+      <tr>
+        <th>Address</th>
+        <th>Value</th>
+      </tr>
+      <!-- Example row. You can add more rows dynamically using JavaScript -->
+      <tr>
+        <td><input type="number" name="address[]" required></td>
+        <td><input type="number" name="value[]" required></td>
+        <td><button class="deleteRowBtn">Delete</button></td>
+      </tr>
+    </table><br>
 
-<label for="unit">Value:</label>
-    <input type="number" id="value" name="value" required><br><br>
-
+    <input type="button" value="Add Row" id="addRowBtn">
     <input type="submit" value="Submit"><br><br>
 
     <div id="response"></div>
   </form>
-</body>
-</html>
 
-<script>
+  <script>
     document.addEventListener("DOMContentLoaded", function () {
       const form = document.getElementById("modbusForm");
       const responseDiv = document.getElementById("response");
-    
+      const addRowBtn = document.getElementById("addRowBtn");
+      const registers = document.getElementById("registers");
+
       form.addEventListener("submit", async function (event) {
         event.preventDefault();
     
         const formData = new FormData(form);
         const data = {};
+
         formData.forEach((value, key) => {
-          data[key] = value;
+          if (key.endsWith("[]")) {
+            // If the key ends with [], it's an array
+            const realKey = key.slice(0, -2);
+            if (!data[realKey]) {
+              data[realKey] = [];
+            }
+            data[realKey].push(value);
+          } else {
+            data[key] = value;
+          }
         });
     
         const response = await fetch("/submit", {
@@ -58,6 +77,26 @@
           responseDiv.innerHTML = "Error: " + jsonResponse.error;
         }
       });
+
+      // Add row to CRUD table
+      addRowBtn.addEventListener("click", function () {
+        const newRow = document.createElement("tr");
+        newRow.innerHTML = `
+          <td><input type="number" name="address[]" required></td>
+          <td><input type="number" name="value[]" required></td>
+          <td><button class="deleteRowBtn">Delete</button></td>
+        `;
+        registers.appendChild(newRow);
+      });
+
+      // Delete row from CRUD table
+      registers.addEventListener("click", function (event) {
+        if (event.target.classList.contains("deleteRowBtn")) {
+            const row = event.target.closest("tr");
+            row.remove();
+        }
+      });
     });
-    </script>
-    
+  </script>
+</body>
+</html>
