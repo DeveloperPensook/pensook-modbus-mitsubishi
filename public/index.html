@@ -4,36 +4,64 @@
   <title>Form Page</title>
 </head>
 <body>
-  <h1>Pensook FX5 Communicate Testing</h1>
-  <form action="/submit" method="post" id="modbusForm">
-    <label for="ip">IP Address:</label>
-    <input type="text" id="ip" name="ip" value="169.254.166.89" required><br><br>
-
-    <label for="port">Port:</label>
-    <input type="number" id="modbusPort" name="modbusPort" value="502" required> Default ModBus Port<br><br> 
-
-	  <label for="unit">Slave ID:</label>
-    <input type="number" id="slaveId" name="slaveId" required><br><br>
-
-    <h2>CRUD Table</h2>
-    <table id="registers">
-      <tr>
-        <th>Address</th>
-        <th>Value</th>
-      </tr>
-      <!-- Example row. You can add more rows dynamically using JavaScript -->
-      <tr>
-        <td><input type="number" name="address[]" required></td>
-        <td><input type="number" name="value[]" required></td>
-        <td><button class="deleteRowBtn">Delete</button></td>
-      </tr>
-    </table><br>
-
-    <input type="button" value="Add Row" id="addRowBtn">
-    <input type="submit" value="Submit"><br><br>
-
-    <div id="response"></div>
-  </form>
+  <div style="display: flex;">
+    <div style="flex: 1;">
+      <h1>Pensook FX5 Communicate Write Testing </h1>
+      <form action="/submit" method="post" id="modbusForm">
+        <label for="ip">IP Address:</label>
+        <input type="text" id="ip" name="ip" value="169.254.166.89" required><br><br>
+    
+        <label for="port">Port:</label>
+        <input type="number" id="modbusPort" name="modbusPort" value="502" required> Default ModBus Port<br><br> 
+    
+        <label for="unit">Slave ID:</label>
+        <input type="number" id="slaveId" name="slaveId" required><br><br>
+    
+        <h2>Register Lists</h2>
+        <table id="registers">
+          <tr>
+            <th>Address</th>
+            <th>Value</th>
+          </tr>
+          <!-- Example row. You can add more rows dynamically using JavaScript -->
+          <tr>
+            <td><input type="number" name="address[]" required></td>
+            <td><input type="number" name="value[]" required></td>
+            <td><button class="deleteRowBtn">Delete</button></td>
+          </tr>
+        </table><br>
+    
+        <input type="button" value="Add Row" id="addRowBtn">
+        <input type="submit" value="Submit"><br><br>
+    
+        <div id="response"></div>
+      </form>
+    </div>
+    <div style="flex: 1;">
+      <h1>Pensook FX5 Communicate Read Testing</h1>
+      <form action="/submit_read" method="post" id="modbusReadForm">
+        <label for="read_ip">IP Address:</label>
+        <input type="text" id="readIp" name="readIp" value="169.254.166.89" required><br><br>
+        
+        <label for="read_port">Port:</label>
+        <input type="number" id="readModbusPort" name="readModbusPort" value="502" required> Default ModBus Port<br><br> 
+        
+        <label for="read_slaveId">Slave ID:</label>
+        <input type="number" id="readSlaveId" name="readSlaveId" required><br><br>
+        
+        <label for="read_address">Address:</label>
+        <input type="number" id="readAddress" name="readAddress" required><br><br>
+        
+        <label for="read_length">Length:</label>
+        <input type="number" id="readLength" name="readLength" required><br><br>
+        
+        <input type="submit" value="Read"><br><br>
+        
+        <div id="read_response"></div>
+      </form>
+    </div>
+  </div>
+  
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
@@ -94,6 +122,37 @@
         if (event.target.classList.contains("deleteRowBtn")) {
             const row = event.target.closest("tr");
             row.remove();
+        }
+      });
+
+
+      const readForm = document.getElementById("modbusReadForm");
+      const readResponseDiv = document.getElementById("read_response");
+
+      readForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        const readFormData = new FormData(readForm);
+        const readData = {};
+
+        readFormData.forEach((value, key) => {
+          readData[key] = value;
+        });
+
+        const response = await fetch("/submit_read", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(readData),
+        });
+
+        const jsonResponse = await response.json();
+
+        if (jsonResponse.success) {
+          readResponseDiv.innerHTML = "Read data: " + jsonResponse.data.join(", ");
+        } else {
+          readResponseDiv.innerHTML = "Error: " + jsonResponse.error;
         }
       });
     });

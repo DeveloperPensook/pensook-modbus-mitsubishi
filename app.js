@@ -68,3 +68,35 @@ app.post("/submit", async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+app.post("/submit_read", async (req, res) => {
+  console.log(req.body)
+  const ip = req.body.readIp;
+  const port = req.body.readModbusPort;
+  const slaveId = req.body.readSlaveId;
+  const address = req.body.readAddress;
+  const length = req.body.readLength;
+
+  try {
+    const client = new ModbusRTU();
+
+    await client.connectTCP(ip, { port: port });
+    console.log("Connected successfully");
+    
+    client.readHoldingRegisters(slaveId, address, length, (err, data) => {
+      if (err) {
+        console.error('Error reading holding registers:', err);
+      } else {
+        console.log('Holding registers:', data.data);
+      }
+  
+      client.close(() => {
+        res.json({ success: true, data: data });
+        console.log('Connection closed');
+      });
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
