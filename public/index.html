@@ -7,19 +7,19 @@
   <h1>Pensook FX5 Communicate Testing</h1>
   <form action="/submit" method="post" id="modbusForm">
     <label for="ip">IP Address:</label>
-    <input type="text" id="ip" name="ip" required><br><br>
+    <input type="text" id="ip" name="ip" value="169.254.166.89" required><br><br>
 
     <label for="port">Port:</label>
     <input type="number" id="modbusPort" name="modbusPort" value="502" required> Default ModBus Port<br><br> 
 
-    <label for="unit">Unit ID:</label>
-    <input type="text" id="unit" name="unit" required><br><br>
+	<label for="unit">Slave ID:</label>
+    <input type="number" id="slaveId" name="slaveId" required><br><br>
 
-    <label for="address">Address:</label>
-    <input type="text" id="address" name="address" required><br><br>
+    <label for="unit">Address:</label>
+    <input type="number" id="address" name="address" required><br><br>
 
-    <label for="length">Length:</label>
-    <input type="number" id="length" name="length" required><br><br>
+<label for="unit">Value:</label>
+    <input type="number" id="value" name="value" required><br><br>
 
     <input type="submit" value="Submit"><br><br>
 

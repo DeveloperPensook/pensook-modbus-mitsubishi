@@ -16,20 +16,21 @@ app.use(express.json());
 
 // Handle form submission
 app.post("/submit", async (req, res) => {
-  const { ip, port: modbusPort, unit, address, length } = req.body;
-  console.log(req.body)
-
+  const { ip, port: modbusPort, slaveId, address, value } = req.body;
   const client = new ModbusRTU();
 
   try {
-    // Open the connection to the FX5 PLC
-    await client.connectTCP(ip, { port: modbusPort });
+    	// Open the connection to the FX5 PLC
+	await client.connectTCP(ip, { port: modbusPort});
+	client.setID(slaveId)
+	console.log("connect successfully")
 
-    // Read Holding Register (Function Code 0x03)
-    const data = await client.readHoldingRegisters(unit, address, length);
-
-    console.log("Read data:", data.data);
-    res.status(200).json({ success: true, data: data.data });
+	// Write Holding Register
+	await client.writeRegisters(address, value, function(err, data) {
+		console.log("write register successfully")
+		console.log(data)
+	});
+	
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ success: false, error: error.message });
