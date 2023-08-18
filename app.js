@@ -70,7 +70,7 @@ app.post("/submit", async (req, res) => {
 });
 
 app.post("/submit_read", async (req, res) => {
-  console.log(req.body)
+  console.log(req.body);
   const ip = req.body.readIp;
   const port = req.body.readModbusPort;
   const slaveId = req.body.readSlaveId;
@@ -81,22 +81,23 @@ app.post("/submit_read", async (req, res) => {
     const client = new ModbusRTU();
 
     await client.connectTCP(ip, { port: port });
+    client.setID(slaveId)
     console.log("Connected successfully");
-    
-    client.readHoldingRegisters(slaveId, address, length, (err, data) => {
-      if (err) {
-        console.error('Error reading holding registers:', err);
-      } else {
-        console.log('Holding registers:', data.data);
-      }
-  
-      client.close(() => {
-        res.json({ success: true, data: data });
-        console.log('Connection closed');
-      });
-    });
+
+    const data = await client.readHoldingRegisters(address, length);
+    console.log('Holding registers:', data.data);
+
+    await client.close();
+    console.log('Connection closed');
+
+    res.json({ success: true, data: data.data });
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Handle the rejection here
 });
