@@ -31,8 +31,8 @@ app.post("/submit", async (req, res) => {
     console.log(registers);
 
     function writeRegistersSequentially(ip, modbusPort, slaveId, registers) {
-      const client = new ModbusRTU();
-      try {
+      return new Promise((resolve, reject) => {
+        const client = new ModbusRTU();
         client.connectTCP(ip, { port: modbusPort });
 
         function writeNextRegister() {
@@ -56,14 +56,18 @@ app.post("/submit", async (req, res) => {
         }
 
         writeNextRegister();
-      } catch (err) {
-        reject(err);
-      } finally {
-        client.close();
-      }
+
+        client.on("close", () => {
+          resolve();
+        });
+
+        client.on("error", (err) => {
+          reject(err);
+        });
+      });
     }
 
-    writeRegistersSequentially(ip, modbusPort, slaveId, registers);
+    await writeRegistersSequentially(ip, modbusPort, slaveId, registers);
 
     res.json({ success: true, data: resMessage });
   } catch (error) {
