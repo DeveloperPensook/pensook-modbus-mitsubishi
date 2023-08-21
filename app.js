@@ -18,7 +18,6 @@ app.post("/submit", async (req, res) => {
   console.log(req.body);
 
   try {
-    const client = new ModbusRTU();
     let resMessage = [];
     let registers = [];
 
@@ -31,22 +30,12 @@ app.post("/submit", async (req, res) => {
 
     console.log(registers);
 
-    await new Promise((resolve, reject) => {
-      client.connectTCP(ip, { port: modbusPort }, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
-    });
-
     function writeRegistersSequentially(ip, modbusPort, slaveId, registers) {
       const client = new ModbusRTU();
         try {
           client.connectTCP(ip, { port: modbusPort });
     
-          async function writeNextRegister() {
+          function writeNextRegister() {
             if (registers.length === 0) {
               resolve();
               return;
@@ -55,7 +44,7 @@ app.post("/submit", async (req, res) => {
             const register = registers.shift();
             client.setID(slaveId);
             try {
-              await client.writeRegisters(register.address, [register.value]);
+              client.writeRegisters(register.address, [register.value]);
               resMessage.push(`Register ${register.address} written successfully.`);
             } catch (err) {
               console.error(`Error writing register ${register.address}:`, err);
@@ -72,18 +61,7 @@ app.post("/submit", async (req, res) => {
         }
     }
 
-    await writeRegistersSequentially(ip, modbusPort, slaveId, registers);
-
-    await new Promise((resolve, reject) => {
-      client.close((err) => {
-        if (err) {
-          console.error("Error closing connection:", err);
-        } else {
-          console.log("Connection closed.");
-        }
-        resolve();
-      });
-    });
+    writeRegistersSequentially(ip, modbusPort, slaveId, registers);
 
     res.json({ success: true, data: resMessage });
   } catch (error) {
@@ -103,14 +81,14 @@ app.post("/submit_read", async (req, res) => {
   try {
     const client = new ModbusRTU();
 
-    await client.connectTCP(ip, { port: port });
+    client.connectTCP(ip, { port: port });
     client.setID(slaveId);
     console.log("Connected successfully");
 
-    const data = await client.readHoldingRegisters(address, length);
+    const data = client.readHoldingRegisters(address, length);
     console.log('Holding registers:', data.data);
 
-    await client.close();
+    client.close();
     console.log('Connection closed');
 
     res.json({ success: true, data: data.data });
