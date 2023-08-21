@@ -201,14 +201,14 @@
             const jsonResponse = await response.json();
 
             if (jsonResponse.success) {
-              responseDiv.innerHTML =
+              readResponseDiv.innerHTML =
                 "Read data: " + jsonResponse.data.join(", ");
             } else {
-              responseDiv.innerHTML = "Error: " + jsonResponse.error;
+              readResponseDiv.innerHTML = "Error: " + jsonResponse.error;
             }
           } catch (error) {
             console.error("Fetch error:", error);
-            responseDiv.innerHTML = "Fetch error: " + error.message;
+            readResponseDiv.innerHTML = "Fetch error: " + error.message;
           }
         });
       });

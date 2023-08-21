@@ -40,21 +40,16 @@ app.post("/submit_read", async (req, res) => {
 
   try {
     const client = new ModbusRTU();
+    
     await client.connectTCP(readIp, { port: readModbusPort });
+    await client.setID(readSlaveId);
 
-    client.readHoldingRegisters(readSlaveId, readAddress, readLength, (err, data) => {
-      if (err) {
-        console.error("Error reading holding registers:", err);
-        res.status(500).json({ success: false, error: err.message });
-      } else {
-        console.log("Holding registers:", data.data);
-        res.json({ success: true, data: data.data });
-      }
+    const data = await client.readHoldingRegisters(readAddress, readLength);
+    
+    await client.close();
 
-      client.close(() => {
-        console.log("Connection closed");
-      });
-    });
+    console.log("Holding registers:", data.data);
+    res.json({ success: true, data: data.data });
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ success: false, error: error.message });
