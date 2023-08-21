@@ -41,6 +41,39 @@ app.post("/submit", async (req, res) => {
       });
     });
 
+    function writeRegistersSequentially(ip, modbusPort, slaveId, registers) {
+      const client = new ModbusRTU();
+      return new Promise(async (resolve, reject) => {
+        try {
+          await client.connectTCP(ip, { port: modbusPort });
+    
+          async function writeNextRegister() {
+            if (registers.length === 0) {
+              resolve();
+              return;
+            }
+    
+            const register = registers.shift();
+            client.setID(slaveId);
+            try {
+              await client.writeRegisters(register.address, [register.value]);
+              resMessage.push(`Register ${register.address} written successfully.`);
+            } catch (err) {
+              console.error(`Error writing register ${register.address}:`, err);
+            }
+    
+            writeNextRegister();
+          }
+    
+          await writeNextRegister();
+        } catch (err) {
+          reject(err);
+        } finally {
+          await client.close();
+        }
+      });
+    }
+
     await writeRegistersSequentially(ip, modbusPort, slaveId, registers);
 
     await new Promise((resolve, reject) => {
@@ -60,39 +93,6 @@ app.post("/submit", async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
-
-async function writeRegistersSequentially(ip, modbusPort, slaveId, registers) {
-  const client = new ModbusRTU();
-  return new Promise(async (resolve, reject) => {
-    try {
-      await client.connectTCP(ip, { port: modbusPort });
-
-      async function writeNextRegister() {
-        if (registers.length === 0) {
-          resolve();
-          return;
-        }
-
-        const register = registers.shift();
-        client.setID(slaveId);
-        try {
-          await client.writeRegisters(register.address, [register.value]);
-          resMessage.push(`Register ${register.address} written successfully.`);
-        } catch (err) {
-          console.error(`Error writing register ${register.address}:`, err);
-        }
-
-        writeNextRegister();
-      }
-
-      await writeNextRegister();
-    } catch (err) {
-      reject(err);
-    } finally {
-      await client.close();
-    }
-  });
-}
 
 app.post("/submit_read", async (req, res) => {
   console.log(req.body);
