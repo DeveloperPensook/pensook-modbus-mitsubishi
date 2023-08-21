@@ -3,7 +3,6 @@ const ModbusRTU = require("modbus-serial");
 const app = express();
 const port = 3012;
 
-// Serve static files from the "public" directory
 app.use(express.static("public"));
 
 // Start the server
@@ -14,60 +13,87 @@ app.listen(port, () => {
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Handle form submission
 app.post("/submit", async (req, res) => {
-  const { ip, port: modbusPort, slaveId, address, value} = req.body;
-  console.log(req.body)
+  const { ip, port: modbusPort, slaveId, address, value } = req.body;
+  console.log(req.body);
 
   try {
     const client = new ModbusRTU();
-
-    let registers = []
+    let resMessage = [];
+    let registers = [];
 
     for (let i = 0; i < address.length; i++) {
       registers.push({
         address: address[i],
-        value: value[i]
-      })
+        value: value[i],
+      });
     }
 
-    console.log(registers)
+    console.log(registers);
 
-    // Open the TCP connection
-    client.connectTCP(ip, { port: modbusPort }, () => {
-
-      writeRegistersSequentially(registers, () => {
-        // Close the connection after writing
-        client.close(() => {
-          console.log("Connection closed.");
-        });
+    await new Promise((resolve, reject) => {
+      client.connectTCP(ip, { port: modbusPort }, (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
       });
     });
 
-    function writeRegistersSequentially(registers, callback) {
-      if (registers.length === 0) {
-        callback();
-        return;
-      }
+    await writeRegistersSequentially(registers);
 
-      const register = registers.shift();
-      client.setID(slaveId); // Set the current slave ID
-      client.writeRegisters(register.address, [register.value], (err) => {
+    await new Promise((resolve, reject) => {
+      client.close((err) => {
         if (err) {
-          console.error(`Error writing register ${register.address}:`, err);
+          console.error("Error closing connection:", err);
         } else {
-          console.log(`Register ${register.address} written successfully.`);
+          console.log("Connection closed.");
         }
-
-        // Continue with the next register
-        writeRegistersSequentially(registers, callback);
+        resolve();
       });
-    }
+    });
+
+    res.json({ success: true, data: resMessage });
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+async function writeRegistersSequentially(registers) {
+  const client = new ModbusRTU();
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      await client.connectTCP(ip, { port: modbusPort });
+
+      async function writeNextRegister() {
+        if (registers.length === 0) {
+          resolve();
+          return;
+        }
+
+        const register = registers.shift();
+        client.setID(slaveId);
+        try {
+          await client.writeRegisters(register.address, [register.value]);
+          resMessage.push(`Register ${register.address} written successfully.`);
+        } catch (err) {
+          console.error(`Error writing register ${register.address}:`, err);
+        }
+
+        writeNextRegister();
+      }
+
+      await writeNextRegister();
+    } catch (err) {
+      reject(err);
+    } finally {
+      await client.close();
+    }
+  });
+}
 
 app.post("/submit_read", async (req, res) => {
   console.log(req.body);
@@ -81,7 +107,7 @@ app.post("/submit_read", async (req, res) => {
     const client = new ModbusRTU();
 
     await client.connectTCP(ip, { port: port });
-    client.setID(slaveId)
+    client.setID(slaveId);
     console.log("Connected successfully");
 
     const data = await client.readHoldingRegisters(address, length);
@@ -99,5 +125,4 @@ app.post("/submit_read", async (req, res) => {
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  // Handle the rejection here
 });
