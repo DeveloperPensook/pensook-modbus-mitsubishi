@@ -43,9 +43,8 @@ app.post("/submit", async (req, res) => {
 
     function writeRegistersSequentially(ip, modbusPort, slaveId, registers) {
       const client = new ModbusRTU();
-      return new Promise(async (resolve, reject) => {
         try {
-          await client.connectTCP(ip, { port: modbusPort });
+          client.connectTCP(ip, { port: modbusPort });
     
           async function writeNextRegister() {
             if (registers.length === 0) {
@@ -65,13 +64,12 @@ app.post("/submit", async (req, res) => {
             writeNextRegister();
           }
     
-          await writeNextRegister();
+          writeNextRegister();
         } catch (err) {
           reject(err);
         } finally {
-          await client.close();
+          client.close();
         }
-      });
     }
 
     await writeRegistersSequentially(ip, modbusPort, slaveId, registers);
