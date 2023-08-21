@@ -32,33 +32,35 @@ app.post("/submit", async (req, res) => {
 
     function writeRegistersSequentially(ip, modbusPort, slaveId, registers) {
       const client = new ModbusRTU();
-        try {
-          client.connectTCP(ip, { port: modbusPort });
-    
-          function writeNextRegister() {
-            if (registers.length === 0) {
-              resolve();
-              return;
-            }
-    
-            const register = registers.shift();
-            client.setID(slaveId);
-            try {
-              client.writeRegisters(register.address, [register.value]);
-              resMessage.push(`Register ${register.address} written successfully.`);
-            } catch (err) {
-              console.error(`Error writing register ${register.address}:`, err);
-            }
-    
-            writeNextRegister();
+      try {
+        client.connectTCP(ip, { port: modbusPort });
+
+        function writeNextRegister() {
+          if (registers.length === 0) {
+            resolve();
+            return;
           }
-    
+
+          const register = registers.shift();
+          client.setID(slaveId);
+          try {
+            client.writeRegisters(register.address, [register.value]);
+            resMessage.push(
+              `Register ${register.address} written successfully.`
+            );
+          } catch (err) {
+            console.error(`Error writing register ${register.address}:`, err);
+          }
+
           writeNextRegister();
-        } catch (err) {
-          reject(err);
-        } finally {
-          client.close();
         }
+
+        writeNextRegister();
+      } catch (err) {
+        reject(err);
+      } finally {
+        client.close();
+      }
     }
 
     writeRegistersSequentially(ip, modbusPort, slaveId, registers);
@@ -71,7 +73,7 @@ app.post("/submit", async (req, res) => {
 });
 
 app.post("/submit_read", async (req, res) => {
-  console.log(req.body)
+  console.log(req.body);
   const ip = req.body.readIp;
   const port = req.body.readModbusPort;
   const slaveId = req.body.readSlaveId;
@@ -81,23 +83,23 @@ app.post("/submit_read", async (req, res) => {
   try {
     const client = new ModbusRTU();
 
-    client.connectTCP(ip, { port: port });
-    client.setID(slaveId);
+    await client.connectTCP(ip, { port: port });
     console.log("Connected successfully");
 
-    const data = client.readHoldingRegisters(address, length);
-    console.log('Holding registers:', data.data);
+    client.readHoldingRegisters(slaveId, address, length, (err, data) => {
+      if (err) {
+        console.error("Error reading holding registers:", err);
+      } else {
+        console.log("Holding registers:", data.data);
+      }
 
-    client.close();
-    console.log('Connection closed');
-
-    res.json({ success: true, data: data.data });
+      client.close(() => {
+        res.json({ success: true, data: data });
+        console.log("Connection closed");
+      });
+    });
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
