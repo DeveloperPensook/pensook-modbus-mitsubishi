@@ -41,7 +41,7 @@ app.post("/submit", async (req, res) => {
       });
     });
 
-    await writeRegistersSequentially(registers);
+    await writeRegistersSequentially(ip, modbusPort, slaveId, registers);
 
     await new Promise((resolve, reject) => {
       client.close((err) => {
@@ -61,9 +61,8 @@ app.post("/submit", async (req, res) => {
   }
 });
 
-async function writeRegistersSequentially(registers) {
+async function writeRegistersSequentially(ip, modbusPort, slaveId, registers) {
   const client = new ModbusRTU();
-
   return new Promise(async (resolve, reject) => {
     try {
       await client.connectTCP(ip, { port: modbusPort });
