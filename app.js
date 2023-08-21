@@ -71,7 +71,7 @@ app.post("/submit", async (req, res) => {
 });
 
 app.post("/submit_read", async (req, res) => {
-  console.log(req.body);
+  console.log(req.body)
   const ip = req.body.readIp;
   const port = req.body.readModbusPort;
   const slaveId = req.body.readSlaveId;
